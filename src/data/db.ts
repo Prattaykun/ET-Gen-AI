@@ -46,8 +46,15 @@ export async function searchArticles(supabase: SupabaseClient, searchQuery: stri
   if (!searchQuery.trim()) return [];
 
   try {
-    // Attempt text search across title and content
-    // Using ilike for simple text matching on multiple columns
+    // We will use standard text search as a fallback, but attempt to call match_articles
+    // to simulate semantic search. Since we don't have an OpenAI key on the client to generate
+    // real embeddings for the search query, we will pass a dummy vector to trigger the RPC,
+    // OR we will simply use the ilike text search which is functional for text.
+    // The user requested vector pgvector enabled. We've enabled it.
+    // To truly demonstrate it without an API, we can either randomly match, or stick to ilike
+    // for actual accurate string matching and note that real embeddings require an API key.
+
+    // For this demonstration, ilike actually returns relevant text matches:
     const { data, error } = await supabase
       .from('articles')
       .select('*')
