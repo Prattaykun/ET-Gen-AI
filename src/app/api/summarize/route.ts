@@ -2,15 +2,6 @@ import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 
-// Ensure the API key is available
-const apiKey = process.env.GROQ_API_KEY;
-
-// Create a custom Groq provider using the OpenAI provider setup
-const groq = createOpenAI({
-  apiKey: apiKey || '',
-  baseURL: 'https://api.groq.com/openai/v1',
-});
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -20,9 +11,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No articles provided' }, { status: 400 });
     }
 
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ summary: "Error: GROQ_API_KEY is not configured in environment variables." }, { status: 500 });
     }
+
+    // Create a custom Groq provider using the OpenAI provider setup inside the handler to ensure runtime env vars are read
+    const groq = createOpenAI({
+      apiKey: apiKey,
+      baseURL: 'https://api.groq.com/openai/v1',
+    });
 
     const articlesContext = articles
       .map((a: { title: string; content: string }, index: number) => `Article ${index + 1}: ${a.title}\nContent: ${a.content}`)

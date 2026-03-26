@@ -244,7 +244,7 @@ export default function DiscoverPage() {
                 </>
               ) : (
                 <div className="text-center py-12">
-                  <p className="text-gray-500 text-lg">No articles found matching "{searchQuery}".</p>
+                  <p className="text-gray-500 text-lg">No articles found matching &quot;{searchQuery}&quot;.</p>
                 </div>
               )}
             </div>
