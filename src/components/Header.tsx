@@ -14,7 +14,7 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/discover" className="p-1 hover:bg-gray-100 rounded text-gray-700">
+          <Link href="/" className="p-1 hover:bg-gray-100 rounded text-gray-700">
             <Search className="h-5 w-5" />
           </Link>
           <button className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded font-medium text-sm hover:bg-red-700 transition-colors">
@@ -27,13 +27,12 @@ export default function Header() {
       <div className="overflow-x-auto no-scrollbar">
         <nav className="flex items-center gap-6 px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-600">
           <Link href="/" className="hover:text-red-600 transition-colors py-1">Home</Link>
+          <Link href="/news" className="hover:text-red-600 transition-colors py-1">News</Link>
           <Link href="/prime" className="hover:text-red-600 transition-colors py-1">ET Prime</Link>
           <Link href="/markets" className="hover:text-red-600 transition-colors py-1">Markets</Link>
-          <Link href="/news" className="hover:text-red-600 transition-colors py-1">News</Link>
           <Link href="/industry" className="hover:text-red-600 transition-colors py-1">Industry</Link>
           <Link href="/wealth" className="hover:text-red-600 transition-colors py-1">Wealth</Link>
           <Link href="/tech" className="hover:text-red-600 transition-colors py-1">Tech</Link>
-          <Link href="/discover" className="hover:text-red-600 transition-colors py-1 font-bold text-red-600">Perplexity Search</Link>
         </nav>
       </div>
     </header>
