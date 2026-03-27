@@ -12,6 +12,7 @@ export default function PersonalityAssessment() {
   const [answers, setAnswers] = useState<PersonalityProfile>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { user } = useAuth();
   const supabase = createClient();
@@ -59,30 +60,45 @@ export default function PersonalityAssessment() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setError(null);
+    
+    if (!user?.id) {
+      setError('User not authenticated');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      console.log('Saving personality assessment...', { userId: user.id, answers });
+
+      // Try to insert or update user record
+      const { error: upsertError } = await supabase
         .from('users')
         .upsert({
-          id: user?.id,
-          email: user?.email,
+          id: user.id,
+          email: user.email,
           personality_traits: answers,
           personality_completed: true,
-          investment_style: answers.investment_style,
-          risk_tolerance: answers.risk_tolerance,
+          investment_style: answers.investment_style || '',
+          risk_tolerance: answers.risk_tolerance || '',
           investment_goals: answers.investment_goals || [],
           preferred_industries: answers.preferred_industries || [],
           news_categories: answers.news_categories || []
-        }, {
-          onConflict: 'id'
         });
 
-      if (error) throw error;
+      if (upsertError) {
+        console.error('Upsert error:', upsertError);
+        throw new Error(`Database error: ${upsertError.message}`);
+      }
+
+      console.log('Assessment saved successfully!');
       setShowCompletion(true);
       setTimeout(() => {
         router.push('/');
       }, 2000);
     } catch (error) {
       console.error('Error saving personality assessment:', error);
+      setError(error instanceof Error ? error.message : 'Failed to save assessment. Please try again.');
       setIsSubmitting(false);
     }
   };
@@ -118,9 +134,9 @@ export default function PersonalityAssessment() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white via-[#fdf2f2] to-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-white via-[#fdf2f2] to-white">
       {/* Progress Bar */}
-      <div className="w-full h-1 bg-et-border">
+      <div className="w-full h-1 bg-et-border fixed top-0 left-0 z-40 pointer-events-none">
         <div
           className="h-full bg-et-red transition-all duration-500"
           style={{ width: `${progress}%` }}
@@ -128,8 +144,8 @@ export default function PersonalityAssessment() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full pt-8">
           {/* Question Counter */}
           <div className="text-center mb-12">
             <span className="text-et-grey-medium font-bold uppercase tracking-widest text-[12px]">
@@ -146,6 +162,17 @@ export default function PersonalityAssessment() {
 
           {/* Options */}
           <div className="space-y-4 mb-12">
+            {error && (
+              <div className="bg-red-50 border border-red-300 rounded-sm p-4 mb-6">
+                <p className="text-red-700 font-serif text-sm">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-red-600 underline text-xs mt-2 hover:text-red-800"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             {question.options.map((option, idx) => {
               const isSelected =
                 Array.isArray(answers[option.trait as keyof PersonalityProfile])

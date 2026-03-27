@@ -96,8 +96,13 @@ export default function Header() {
                   <span className="truncate max-w-[120px]">{user.email?.split('@')[0]}</span>
                 </div>
                 <button
-                  onClick={() => signOut()}
-                  className="text-et-grey-medium hover:text-et-red transition-colors"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await signOut();
+                  }}
+                  type="button"
+                  className="text-et-grey-medium hover:text-et-red transition-colors cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="h-4.5 w-4.5" />
