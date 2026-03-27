@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Sparkles, Filter, FileText, Loader2, Bookmark, Share2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { useRouter } from 'next/navigation';
 import { ArticleCard } from '@/components/ArticleCard';
 import HeroSection from '@/components/HeroSection';
 import { Article, mockArticles } from '@/data/mockArticles';
 import { createClient } from '@/utils/supabase/client';
-import { fetchArticles, searchArticles } from '@/data/db';
+import { fetchArticles, searchArticles, getUserPersonality, getPersonalizedArticles } from '@/data/db';
 import { useAuth } from '@/context/AuthContext';
 import { CatchUp } from '@/components/CatchUp';
 
@@ -14,6 +16,7 @@ export default function DiscoverPage() {
   const [activeTab, setActiveTab] = useState<'discover' | 'search'>('discover');
   const [searchQuery, setSearchQuery] = useState('');
   const [discoverArticles, setDiscoverArticles] = useState<Article[]>([]);
+  const [personalizedArticles, setPersonalizedArticles] = useState<Article[]>([]);
   const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedArticles, setSelectedArticles] = useState<Article[]>([]);
@@ -24,10 +27,39 @@ export default function DiscoverPage() {
   const userMetadata = user?.user_metadata;
   const [catchUpSummary, setCatchUpSummary] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Check if user needs to complete personality assessment
+  useEffect(() => {
+    const checkPersonalityCompletion = async () => {
+      if (!user?.id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('personality_completed')
+          .eq('id', user.id)
+          .single();
+
+        if (error || !data || !data.personality_completed) {
+          // Redirect to assessment if not completed
+          router.push('/assessment');
+        }
+      } catch (e) {
+        console.error('Error checking personality completion:', e);
+        // If error, still allow access (fallback)
+      }
+    };
+
+    if (user?.id) {
+      checkPersonalityCompletion();
+    }
+  }, [user?.id, router, supabase]);
 
   const formatDate = () => {
     if (!mounted) return "";
@@ -39,8 +71,6 @@ export default function DiscoverPage() {
     const firstName = userMetadata.full_name.split(' ')[0];
     return `The ${firstName} Edition`;
   };
-
-  const supabase = createClient();
 
   useEffect(() => {
     async function loadDiscover() {
@@ -55,17 +85,25 @@ export default function DiscoverPage() {
       }, 8000);
 
       try {
+        // Fetch personality profile
+        const personality = await getUserPersonality(supabase, user?.id);
+
+        // Get personalized articles
+        const personalized = await getPersonalizedArticles(supabase, personality);
+
+        // Get all articles as fallback
         const allArticles = await fetchArticles(supabase);
 
         const userPreferences = user?.user_metadata?.news_preference
           ? [user.user_metadata.news_preference.toLowerCase()]
           : ['markets', 'tech', 'finance', 'news', 'industry', 'prime', 'wealth'];
 
-        const personalized = allArticles.filter(a =>
+        const topArticles = allArticles.filter(a =>
           userPreferences.some(pref => a.category.toLowerCase().includes(pref))
         );
 
-        setDiscoverArticles(personalized.length > 0 ? personalized : allArticles);
+        setPersonalizedArticles(personalized.length > 0 ? personalized : []);
+        setDiscoverArticles(topArticles.length > 0 ? topArticles : allArticles);
       } catch (error) {
         console.error("Error loading discover feed:", error);
         setDiscoverArticles([...mockArticles]);
@@ -79,7 +117,7 @@ export default function DiscoverPage() {
       loadDiscover();
       setSummary(null);
     }
-  }, [activeTab]);
+  }, [activeTab, user?.id]);
 
   useEffect(() => {
     async function loadSearch() {
@@ -169,7 +207,7 @@ export default function DiscoverPage() {
       <div className="flex border-b border-et-border mb-6">
         <button
           onClick={() => setActiveTab('discover')}
-          className={`px-8 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'discover'
+          className={`px-8 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'discover'
             ? 'border-b-4 border-et-red text-et-red'
             : 'text-et-grey-medium hover:text-black border-b-4 border-transparent'
             }`}
@@ -178,7 +216,7 @@ export default function DiscoverPage() {
         </button>
         <button
           onClick={() => setActiveTab('search')}
-          className={`px-8 py-3 text-sm font-bold uppercase tracking-widest transition-all ${activeTab === 'search'
+          className={`px-8 py-3 text-sm font-bold uppercase tracking-widest transition-all cursor-pointer ${activeTab === 'search'
             ? 'border-b-4 border-et-red text-et-red'
             : 'text-et-grey-medium hover:text-black border-b-4 border-transparent'
             }`}
@@ -254,12 +292,12 @@ export default function DiscoverPage() {
 
                   {/* AI Summary Section */}
                   {(summary || isSummarizing) && (
-                    <div className="bg-[#fdf2f2] border border-[#fbd5d5] rounded-sm p-6 mb-8 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-[#fdf2f2] via-white to-[#fff5f5] border border-[#fbd5d5] rounded-sm p-8 mb-8 relative overflow-hidden shadow-sm">
                       <div className="absolute top-0 right-0 p-2 flex gap-2">
                         <button className="p-1.5 text-et-grey-medium hover:text-et-red transition-colors"><Bookmark className="w-4 h-4" /></button>
                         <button className="p-1.5 text-et-grey-medium hover:text-et-red transition-colors"><Share2 className="w-4 h-4" /></button>
                       </div>
-                      <div className="flex items-center gap-2 mb-4">
+                      <div className="flex items-center gap-2 mb-6">
                         <div className="bg-et-red p-1 rounded-sm"><Sparkles className="w-4 h-4 text-white" /></div>
                         <h3 className="text-lg font-black font-serif text-et-red uppercase tracking-tight">ET Intelligence Summary</h3>
                       </div>
@@ -268,12 +306,57 @@ export default function DiscoverPage() {
                           <Loader2 className="w-5 h-5 animate-spin" /> Synthesizing data points for you...
                         </div>
                       ) : (
-                        <div className="text-black leading-relaxed font-serif text-lg whitespace-pre-wrap">{summary}</div>
+                        <div className="prose prose-sm max-w-none text-et-grey-dark [&_h1]:text-2xl [&_h1]:font-black [&_h1]:font-serif [&_h1]:text-et-red [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:border-b [&_h1]:border-et-border [&_h1]:pb-2 [&_h2]:text-xl [&_h2]:font-black [&_h2]:font-serif [&_h2]:text-et-red [&_h2]:mt-5 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-black [&_h3]:font-serif [&_h3]:text-et-red [&_h3]:mt-4 [&_h3]:mb-2 [&_strong]:text-et-red [&_strong]:font-black [&_em]:italic [&_em]:text-et-grey-dark [&_ul]:list-disc [&_ul]:list-inside [&_ul]:space-y-2 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:list-inside [&_ol]:space-y-2 [&_ol]:my-4 [&_li]:text-base [&_li]:leading-relaxed [&_p]:text-base [&_p]:leading-relaxed [&_p]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-et-red [&_blockquote]:pl-4 [&_blockquote]:py-1 [&_blockquote]:my-4 [&_blockquote]:italic [&_blockquote]:text-et-grey-medium [&_code]:bg-et-surface [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[13px] [&_code]:font-mono [&_code]:text-et-red">
+                          <ReactMarkdown
+                            components={{
+                              h1: ({node, ...props}) => <h1 className="text-2xl font-black font-serif text-et-red mt-6 mb-4 border-b border-et-border pb-2" {...props} />,
+                              h2: ({node, ...props}) => <h2 className="text-xl font-black font-serif text-et-red mt-5 mb-3" {...props} />,
+                              h3: ({node, ...props}) => <h3 className="text-lg font-black font-serif text-et-red mt-4 mb-2" {...props} />,
+                              strong: ({node, ...props}) => <strong className="font-black text-et-red" {...props} />,
+                              em: ({node, ...props}) => <em className="italic text-et-grey-dark" {...props} />,
+                              ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-2 my-4 ml-4" {...props} />,
+                              ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-2 my-4 ml-4" {...props} />,
+                              li: ({node, ...props}) => <li className="text-base leading-relaxed" {...props} />,
+                              p: ({node, ...props}) => <p className="text-base leading-relaxed my-3" {...props} />,
+                              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-et-red pl-4 py-1 my-4 italic text-et-grey-medium" {...props} />,
+                              code: ({node, ...props}) => <code className="bg-et-surface px-2 py-0.5 rounded text-[13px] font-mono text-et-red" {...props} />,
+                            }}
+                          >
+                            {summary}
+                          </ReactMarkdown>
+                        </div>
                       )}
                     </div>
                   )}
 
                   <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10 border-t border-et-border pt-10 mt-10">
+                      <div className="md:col-span-2">
+                        <h4 className="font-serif font-black text-xl border-b border-et-border pb-2 mb-8 flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-et-red" />
+                          Recommended for You
+                        </h4>
+                      </div>
+                    </div>
+                    {personalizedArticles.length > 0 ? (
+                      personalizedArticles.map(article => (
+                        <ArticleCard
+                          key={article.id}
+                          article={article}
+                          selectable={true}
+                          selected={selectedArticles.some(a => a.id === article.id)}
+                          onSelect={handleSelectArticle}
+                          onPersonalizedSummary={(a) => handleSummarize([a], "How does this news specifically affect me and what should I do?")}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-et-grey-medium font-serif italic">
+                        No personalized recommendations yet. Check back soon!
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-8 mt-12">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-10 border-t border-et-border pt-10 mt-10">
                       <div className="md:col-span-2">
                         <h4 className="font-serif font-black text-xl border-b border-et-border pb-2 mb-8 flex items-center gap-2">

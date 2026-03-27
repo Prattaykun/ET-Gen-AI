@@ -7,7 +7,27 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function Header() {
   const [currentDate, setCurrentDate] = useState('');
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, signOut, loading } = useAuth();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Only show header when at the very top of the page
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -45,7 +65,9 @@ export default function Header() {
   ];
 
   return (
-    <header className="bg-white shadow-sm">
+    <header className={`bg-white shadow-sm transition-transform duration-300 ease-in-out ${
+      isVisible ? 'translate-y-0' : '-translate-y-full'
+    }`}>
       {/* Branding Tier */}
       <div className="border-b border-et-border py-6">
         <div className="max-w-[1280px] mx-auto px-4 lg:px-8 flex items-center justify-between">
