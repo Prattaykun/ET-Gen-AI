@@ -14,14 +14,14 @@ export default function Header() {
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Only show header when at the very top of the page
       if (currentScrollY < 10) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
       }
-      
+
       setLastScrollY(currentScrollY);
     };
 
@@ -61,13 +61,19 @@ export default function Header() {
   ];
 
   const l2Nav = [
-    'News Live!', 'Govt Tenders', 'Job Apply', 'Spotlight', 'Economy', 'Finance', 'Logistics', 'Politics'
+    { name: 'News Live!', href: '/news' },
+    { name: 'Govt Tenders', href: '/tenders' },
+    { name: 'Job Apply', href: '/jobs' },
+    { name: 'Spotlight', href: '/spotlight' },
+    { name: 'Economy', href: '/economy' },
+    { name: 'Finance', href: '/finance' },
+    { name: 'Logistics', href: '/logistics' },
+    { name: 'Politics', href: '/politics' }
   ];
 
   return (
-    <header className={`bg-white shadow-sm transition-transform duration-300 ease-in-out ${
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    }`}>
+    <header className={`bg-white shadow-sm transition-transform duration-300 ease-in-out ${isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}>
       {/* Branding Tier */}
       <div className="border-b border-et-border py-6">
         <div className="max-w-[1280px] mx-auto px-4 lg:px-8 flex items-center justify-between">
@@ -150,11 +156,11 @@ export default function Header() {
           {l2Nav.map((item, i) => (
             <Link
               key={i}
-              href="#"
+              href={item.href}
               className="text-[10px] font-extrabold text-et-grey-dark/70 hover:text-et-red whitespace-nowrap flex items-center gap-1.5 transition-all duration-200 uppercase tracking-widest font-sans"
             >
-              {item === 'News Live!' && <span className="w-2 h-2 bg-et-red rounded-full animate-pulse shadow-[0_0_8px_rgba(237,25,36,0.5)]"></span>}
-              {item}
+              {item.name === 'News Live!' && <span className="w-2 h-2 bg-et-red rounded-full animate-pulse shadow-[0_0_8px_rgba(237,25,36,0.5)]"></span>}
+              {item.name}
             </Link>
           ))}
         </div>

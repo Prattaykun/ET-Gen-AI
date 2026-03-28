@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
+// Triggering re-compile after fix
 import { createOpenAI } from '@ai-sdk/openai';
 
 // Ensure the API key is available
@@ -58,27 +59,42 @@ Guidelines:
 5. Format in clean Markdown.
 6. Do not repeat the history in your answer.`;
 
-    // Filter history to ensure format is strictly valid for OpenAI/Groq API
-    const formattedHistory = history.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: String(msg.content).split('Suggested Next Questions:')[0].trim(),
-    }));
+    // Filter history to ensure format is strictly valid for OpenAI/Groq API (alternating roles)
+    const formattedHistory = [];
+    let lastRole = 'system';
+
+    for (const msg of history) {
+      const role = msg.role === 'user' ? 'user' : 'assistant';
+      if (role !== lastRole) {
+        formattedHistory.push({
+          role,
+          content: String(msg.content).split('Suggested Next Questions:')[0].trim(),
+        });
+        lastRole = role;
+      }
+    }
 
     const messages = [
       { role: 'system', content: systemPrompt },
       ...formattedHistory,
     ];
 
-    // If it's a first turn with a query, add it
-    if (query && formattedHistory.length === 0) {
-      messages.push({ role: 'user', content: `Based on these articles, answer: ${query}` });
+    const finalQuery = query || "Please provide a comprehensive summary and collective intelligence analysis of these articles, highlighting key trends, market implications, and strategic takeaways.";
+
+    // Ensure the LAST message is ALWAYS from the USER
+    if (lastRole !== 'user') {
+      messages.push({ role: 'user', content: `Based on these articles, answer: ${finalQuery}` });
+    } else if (query && formattedHistory.length > 0) {
+      // If the last message in history was already from user, and we have a new query,
+      // something might be out of sync, but we'll prioritize the new query.
+      // (This usually shouldn't happen with correct frontend logic)
     }
 
     console.log('[API] Final messages count:', messages.length);
 
     const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      messages: messages as any,
+      messages: messages.map(m => ({ role: m.role, content: m.content })) as any,
       temperature: 0.2,
     });
 

@@ -47,35 +47,11 @@ export async function searchArticles(supabase: SupabaseClient, searchQuery: stri
   if (!searchQuery.trim()) return [];
 
   try {
-    // Attempt text search across title and content
-    // Using ilike for simple text matching on multiple columns
-    const { data, error } = await supabase
-      .from('articles')
-      .select('*')
-      .or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
-      .order('timestamp', { ascending: false });
-
-    if (error || !data || data.length === 0) {
-      console.warn("Supabase search failed or returned no data, falling back to mock data.", error?.message || 'No data');
-      return mockArticles
-        .filter(article =>
-          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.category.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }
-
-    return data.map((d: Record<string, unknown>) => ({
-      id: d.id as string,
-      title: d.title as string,
-      content: d.content as string,
-      category: d.category as string,
-      timestamp: d.timestamp as string,
-      imageUrl: d.image_url as string
-    }));
-  } catch (e) {
-    console.error("Exception during search, falling back to mock data", e);
+    const response = await fetch(`/api/news?q=${encodeURIComponent(searchQuery)}`);
+    if (!response.ok) throw new Error('Search failed');
+    return await response.json();
+  } catch (error) {
+    console.warn("News API search failed, falling back to local search.", error);
     return mockArticles
       .filter(article =>
         article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,6 +59,16 @@ export async function searchArticles(supabase: SupabaseClient, searchQuery: stri
         article.category.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+}
+async function fetchTopBusinessNews() {
+  try {
+    const response = await fetch('/api/news?category=business');
+    if (!response.ok) throw new Error('Fetch failed');
+    return await response.json();
+  } catch (error) {
+    console.warn("News API fetch failed, falling back to mock data.", error);
+    return mockArticles.filter(a => a.category === 'Economy').slice(0, 10);
   }
 }
 
@@ -128,7 +114,7 @@ export async function getPersonalizedArticles(
     if (personality.preferred_industries) {
       personality.preferred_industries.forEach(industry => {
         if (article.content.toLowerCase().includes(industry.toLowerCase()) ||
-            article.title.toLowerCase().includes(industry.toLowerCase())) {
+          article.title.toLowerCase().includes(industry.toLowerCase())) {
           score += 3;
         }
       });
@@ -147,7 +133,7 @@ export async function getPersonalizedArticles(
     if (personality.investment_goals) {
       personality.investment_goals.forEach(goal => {
         if (article.content.toLowerCase().includes(goal.toLowerCase()) ||
-            article.title.toLowerCase().includes(goal.toLowerCase())) {
+          article.title.toLowerCase().includes(goal.toLowerCase())) {
           score += 2;
         }
       });
@@ -165,4 +151,35 @@ export async function getPersonalizedArticles(
     .sort((a, b) => b.score - a.score)
     .slice(0, 10)
     .map(item => item.article);
+}
+export async function getArticleById(supabase: SupabaseClient, id: string): Promise<Article | null> {
+  // Prioritize mock data if ID starts with 'mock-'
+  if (id.startsWith('mock-')) {
+    return mockArticles.find(a => a.id === id) || null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      console.warn("Supabase fetch for single article failed, falling back to mock data.", error?.message);
+      return mockArticles.find(a => a.id === id) || null;
+    }
+
+    return {
+      id: data.id as string,
+      title: data.title as string,
+      content: data.content as string,
+      category: data.category as string,
+      timestamp: data.timestamp as string,
+      imageUrl: data.image_url as string
+    };
+  } catch (e) {
+    console.error("Exception during single article fetch", e);
+    return mockArticles.find(a => a.id === id) || null;
+  }
 }

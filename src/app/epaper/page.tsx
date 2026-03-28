@@ -4,15 +4,25 @@ import { useEffect, useState } from 'react';
 import { fetchArticles } from '@/data/db';
 import { createClient } from '@/utils/supabase/client';
 import { Article } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 import { NewspaperLayout } from '@/components/NewspaperLayout';
 import { Loader2 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function EPaperPage() {
+    const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const supabase = createClient();
 
     useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/auth/login?returnTo=/epaper');
+            return;
+        }
+
         const timeoutId = setTimeout(() => {
             setLoading(false);
         }, 8000);
@@ -30,6 +40,17 @@ export default function EPaperPage() {
         }
         loadArticles();
     }, []);
+
+    if (authLoading || (!user && !authLoading)) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#fdfcf1] font-serif">
+                <Loader2 className="w-12 h-12 text-et-red animate-spin mb-4" />
+                <h2 className="text-2xl font-black uppercase tracking-tighter">
+                    {authLoading ? "Authenticating Session..." : "Redirecting to Login..."}
+                </h2>
+            </div>
+        );
+    }
 
     if (loading) {
         return (

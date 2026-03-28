@@ -259,7 +259,15 @@ export default function DiscoverPage() {
                   }
                 }}
               />
-              {heroMain && <HeroSection mainArticle={heroMain} sideArticles={heroSide} />}
+              {heroMain && (
+                <HeroSection
+                  mainArticle={heroMain}
+                  sideArticles={heroSide}
+                  selectable={activeTab === 'discover'}
+                  selectedArticles={selectedArticles}
+                  onSelect={handleSelectArticle}
+                />
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-8">
@@ -309,17 +317,17 @@ export default function DiscoverPage() {
                         <div className="prose prose-sm max-w-none text-et-grey-dark [&_h1]:text-2xl [&_h1]:font-black [&_h1]:font-serif [&_h1]:text-et-red [&_h1]:mt-6 [&_h1]:mb-4 [&_h1]:border-b [&_h1]:border-et-border [&_h1]:pb-2 [&_h2]:text-xl [&_h2]:font-black [&_h2]:font-serif [&_h2]:text-et-red [&_h2]:mt-5 [&_h2]:mb-3 [&_h3]:text-lg [&_h3]:font-black [&_h3]:font-serif [&_h3]:text-et-red [&_h3]:mt-4 [&_h3]:mb-2 [&_strong]:text-et-red [&_strong]:font-black [&_em]:italic [&_em]:text-et-grey-dark [&_ul]:list-disc [&_ul]:list-inside [&_ul]:space-y-2 [&_ul]:my-4 [&_ol]:list-decimal [&_ol]:list-inside [&_ol]:space-y-2 [&_ol]:my-4 [&_li]:text-base [&_li]:leading-relaxed [&_p]:text-base [&_p]:leading-relaxed [&_p]:my-3 [&_blockquote]:border-l-4 [&_blockquote]:border-et-red [&_blockquote]:pl-4 [&_blockquote]:py-1 [&_blockquote]:my-4 [&_blockquote]:italic [&_blockquote]:text-et-grey-medium [&_code]:bg-et-surface [&_code]:px-2 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[13px] [&_code]:font-mono [&_code]:text-et-red">
                           <ReactMarkdown
                             components={{
-                              h1: ({node, ...props}) => <h1 className="text-2xl font-black font-serif text-et-red mt-6 mb-4 border-b border-et-border pb-2" {...props} />,
-                              h2: ({node, ...props}) => <h2 className="text-xl font-black font-serif text-et-red mt-5 mb-3" {...props} />,
-                              h3: ({node, ...props}) => <h3 className="text-lg font-black font-serif text-et-red mt-4 mb-2" {...props} />,
-                              strong: ({node, ...props}) => <strong className="font-black text-et-red" {...props} />,
-                              em: ({node, ...props}) => <em className="italic text-et-grey-dark" {...props} />,
-                              ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-2 my-4 ml-4" {...props} />,
-                              ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-2 my-4 ml-4" {...props} />,
-                              li: ({node, ...props}) => <li className="text-base leading-relaxed" {...props} />,
-                              p: ({node, ...props}) => <p className="text-base leading-relaxed my-3" {...props} />,
-                              blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-et-red pl-4 py-1 my-4 italic text-et-grey-medium" {...props} />,
-                              code: ({node, ...props}) => <code className="bg-et-surface px-2 py-0.5 rounded text-[13px] font-mono text-et-red" {...props} />,
+                              h1: ({ node, ...props }) => <h1 className="text-2xl font-black font-serif text-et-red mt-6 mb-4 border-b border-et-border pb-2" {...props} />,
+                              h2: ({ node, ...props }) => <h2 className="text-xl font-black font-serif text-et-red mt-5 mb-3" {...props} />,
+                              h3: ({ node, ...props }) => <h3 className="text-lg font-black font-serif text-et-red mt-4 mb-2" {...props} />,
+                              strong: ({ node, ...props }) => <strong className="font-black text-et-red" {...props} />,
+                              em: ({ node, ...props }) => <em className="italic text-et-grey-dark" {...props} />,
+                              ul: ({ node, ...props }) => <ul className="list-disc list-inside space-y-2 my-4 ml-4" {...props} />,
+                              ol: ({ node, ...props }) => <ol className="list-decimal list-inside space-y-2 my-4 ml-4" {...props} />,
+                              li: ({ node, ...props }) => <li className="text-base leading-relaxed" {...props} />,
+                              p: ({ node, ...props }) => <p className="text-base leading-relaxed my-3" {...props} />,
+                              blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-et-red pl-4 py-1 my-4 italic text-et-grey-medium" {...props} />,
+                              code: ({ node, ...props }) => <code className="bg-et-surface px-2 py-0.5 rounded text-[13px] font-mono text-et-red" {...props} />,
                             }}
                           >
                             {summary}
